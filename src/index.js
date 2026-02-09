@@ -182,7 +182,11 @@ app.post("/mpesa/stkpush", async (req, res) => {
     const errorDetails = {
       message: error.message,
       status,
-      data: responseData || null,
+      statusText: error.response?.statusText || null,
+      data: responseData ?? null,
+      headers: error.response?.headers || null,
+      mpesaEnv: MPESA_ENV,
+      mpesaBaseUrl: MPESA_BASE_URL,
     };
     console.error("STK push failed:", JSON.stringify(errorDetails));
     const data = responseData || { error: error.message };
