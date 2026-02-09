@@ -5,6 +5,16 @@ const axios = require("axios");
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const durationMs = Date.now() - start;
+    console.log(
+      `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`
+    );
+  });
+  next();
+});
 
 const MPESA_ENV = process.env.MPESA_ENV || "sandbox";
 const MPESA_BASE_URL =
@@ -140,6 +150,13 @@ app.post("/mpesa/stkpush", async (req, res) => {
       TransactionDesc: transactionDesc || "Client Paybill",
     };
 
+    console.log("STK push request received:", {
+      phoneNumber: normalizePhoneNumber(phoneNumber),
+      amount: Number(amount),
+      accountReference: String(accountReference),
+      childID: childID || null,
+    });
+
     const response = await axios.post(
       `${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
       payload,
@@ -157,8 +174,10 @@ app.post("/mpesa/stkpush", async (req, res) => {
       });
     }
 
+    console.log("STK push response:", response.data);
     return res.json(response.data);
   } catch (error) {
+    console.error("STK push failed:", error.response?.data || error.message);
     const status = error.response?.status || 500;
     const data = error.response?.data || { error: error.message };
     return res.status(status).json(data);
@@ -176,7 +195,11 @@ app.post("/mpesa/callback", async (req, res) => {
     if (isSuccess && callback?.CheckoutRequestID) {
       const pending = pendingCredits.get(callback.CheckoutRequestID);
       if (pending) {
-        await creditResellerAccount(pending.childID, pending.amount);
+        const creditResponse = await creditResellerAccount(
+          pending.childID,
+          pending.amount
+        );
+        console.log("Reseller credited:", creditResponse);
         pendingCredits.delete(callback.CheckoutRequestID);
       }
     }
