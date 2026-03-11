@@ -1,14 +1,22 @@
-# Rikisoft Reseller API
+# Reseller Credit API
 
-Express service for the **Advanta Africa Reseller Credit API** — transfer SMS
-credits to your sub-accounts programmatically.
+Express service for automatic SMS top-ups via **MPesa Paybill → Advanta Africa
+Reseller Credit API**.
 
-> You must be a reseller registered under Advanta Africa to use this API.
+Clients pay to the Consolstech paybill, entering their username as the account
+reference. Safaricom sends a C2B callback, and the service automatically credits
+their SMS account.
+
+## Flow
+
+```
+Client pays to Paybill ──► Safaricom C2B Callback ──► This API ──► Advanta Credit API
+(username as ref)           (confirmation URL)         (auto-credit)
+```
 
 ## Setup
 
-1. Copy `config/env.example` to `.env` in the project root and fill in your
-   credentials.
+1. Copy `config/env.example` to `.env` and fill in your credentials.
 2. Install dependencies and start:
 
 ```bash
@@ -16,14 +24,25 @@ npm install
 npm start
 ```
 
+3. Register your C2B URLs with Safaricom (run once):
+
+```bash
+curl -X POST http://localhost:3000/mpesa/register
+```
+
 ## Environment Variables
 
-| Variable            | Description                                |
-| ------------------- | ------------------------------------------ |
-| `ADVANTA_BASE_URL`  | Base URL of the Advanta SMS platform       |
-| `ADVANTA_API_KEY`   | Your reseller API key                      |
-| `ADVANTA_PARTNER_ID`| Your reseller partner ID                   |
-| `PORT`              | Server port (default `3000`)               |
+| Variable                 | Description                                        |
+| ------------------------ | -------------------------------------------------- |
+| `ADVANTA_BASE_URL`       | Base URL of the Advanta SMS platform               |
+| `ADVANTA_API_KEY`        | Your reseller API key                              |
+| `ADVANTA_PARTNER_ID`     | Your reseller partner ID                           |
+| `MPESA_ENV`              | `production` or `sandbox`                          |
+| `MPESA_CONSUMER_KEY`     | Daraja API consumer key                            |
+| `MPESA_CONSUMER_SECRET`  | Daraja API consumer secret                         |
+| `MPESA_SHORTCODE`        | Your paybill number                                |
+| `MPESA_CALLBACK_BASE_URL`| Public URL where Safaricom sends callbacks         |
+| `PORT`                   | Server port (default `3000`)                       |
 
 ## Endpoints
 
@@ -31,9 +50,26 @@ npm start
 
 Returns `{ "ok": true }`.
 
+### `POST /mpesa/register`
+
+Registers validation and confirmation URLs with Safaricom. Run once after
+deployment.
+
+### `POST /mpesa/validation`
+
+Called by Safaricom before processing a payment. Accepts all payments.
+
+### `POST /mpesa/confirmation`
+
+Called by Safaricom after a payment is completed. Extracts:
+- `BillRefNumber` → client's username (`childID`)
+- `TransAmount` → amount in KES
+
+Then auto-credits the client via the Advanta Reseller Credit API.
+
 ### `POST /reseller/credit`
 
-Credits a client (sub-account) with SMS units.
+Directly credits a client (for manual/programmatic use).
 
 **Request body:**
 
@@ -43,10 +79,6 @@ Credits a client (sub-account) with SMS units.
   "amount": 100
 }
 ```
-
-- `childID` — the client's username
-- `amount` — amount in Kenyan Shillings (converted to SMS units at the
-  configured rate; defaults to 1 KES per SMS if no rate is set)
 
 **Success response:**
 
@@ -60,18 +92,10 @@ Credits a client (sub-account) with SMS units.
 }
 ```
 
-**Error response:**
-
-```json
-{
-  "response-code": 1005,
-  "response-description": "The child acount is invalid. Kindly verify the details"
-}
-```
-
 ## Important Notes
 
-- The `apikey` and `partnerID` are read from your `.env` and sent automatically.
-- The `amount` is in **Kenyan Shillings**; the system converts it to SMS units.
-- Transactions are recorded in the Credit History section of the Advanta
-  dashboard, just like manual credit loading.
+- Clients must enter their **exact Consolstech username** as the paybill
+  account reference.
+- The `amount` is in **KES** and is converted to SMS units at the configured
+  rate (default: 1 KES = 1 SMS).
+- All transactions are logged and recorded in the Advanta Credit History.
