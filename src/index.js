@@ -112,12 +112,12 @@ app.get("/health", (_req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * POST /mpesa/register
+ * POST /c2b/register
  *
  * Registers the Validation and Confirmation URLs with Safaricom.
  * Call this once to set up callbacks for your paybill.
  */
-app.post("/mpesa/register", async (req, res) => {
+app.post("/c2b/register", async (req, res) => {
   try {
     if (!MPESA_SHORTCODE || !MPESA_CALLBACK_BASE_URL) {
       return res.status(500).json({
@@ -131,14 +131,14 @@ app.post("/mpesa/register", async (req, res) => {
     const payload = {
       ShortCode: MPESA_SHORTCODE,
       ResponseType: "Completed",
-      ConfirmationURL: `${baseUrl}/mpesa/confirmation`,
-      ValidationURL: `${baseUrl}/mpesa/validation`,
+      ConfirmationURL: `${baseUrl}/c2b/confirmation`,
+      ValidationURL: `${baseUrl}/c2b/validation`,
     };
 
     console.log("Registering C2B URLs:", payload);
 
     const response = await axios.post(
-      `${MPESA_BASE_URL}/mpesa/c2b/v1/registerurl`,
+      `${MPESA_BASE_URL}/mpesa/c2b/v2/registerurl`,
       payload,
       {
         headers: {
@@ -163,12 +163,12 @@ app.post("/mpesa/register", async (req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * POST /mpesa/validation
+ * POST /c2b/validation
  *
  * Safaricom calls this before processing a C2B payment.
  * We accept all payments by returning ResultCode 0.
  */
-app.post("/mpesa/validation", (req, res) => {
+app.post("/c2b/validation", (req, res) => {
   console.log("C2B Validation request:", JSON.stringify(req.body));
   res.json({ ResultCode: 0, ResultDesc: "Accepted" });
 });
@@ -178,7 +178,7 @@ app.post("/mpesa/validation", (req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * POST /mpesa/confirmation
+ * POST /c2b/confirmation
  *
  * Safaricom calls this after a C2B payment is completed.
  *
@@ -188,7 +188,7 @@ app.post("/mpesa/validation", (req, res) => {
  *   - TransID:       MPesa transaction ID (for logging)
  *   - MSISDN:        payer's phone number (for logging)
  */
-app.post("/mpesa/confirmation", async (req, res) => {
+app.post("/c2b/confirmation", async (req, res) => {
   const payload = req.body || {};
 
   console.log("C2B Confirmation received:", JSON.stringify(payload));
