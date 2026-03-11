@@ -1,7 +1,7 @@
 {
-  "name": "rikisoft-reseller-mpesa",
-  "version": "0.1.0",
-  "description": "MPesa Paybill integration service",
+  "name": "rikisoft-reseller-api",
+  "version": "1.0.0",
+  "description": "Advanta Africa Reseller Credit API service – transfer SMS credits to sub-accounts",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js"
