@@ -1,5 +1,5 @@
 {
-  "name": "reseller-api",
+  "name": "olickhom-reseller",
   "version": "1.0.0",
   "description": "Advanta Africa Reseller Credit API service – transfer SMS credits to sub-accounts",
   "main": "src/index.js",

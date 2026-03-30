@@ -3,7 +3,7 @@
 Express service for automatic SMS top-ups via **MPesa Paybill → Advanta Africa
 Reseller Credit API**.
 
-Clients pay to the Consolstech paybill, entering their username as the account
+Clients pay to the Olickhom paybill, entering their username as the account
 reference. Safaricom sends a C2B callback, and the service automatically credits
 their SMS account.
 
@@ -94,7 +94,7 @@ Directly credits a client (for manual/programmatic use).
 
 ## Important Notes
 
-- Clients must enter their **exact Consolstech username** as the paybill
+- Clients must enter their **exact Olickhom username** as the paybill
   account reference.
 - The `amount` is in **KES** and is converted to SMS units at the configured
   rate (default: 1 KES = 1 SMS).

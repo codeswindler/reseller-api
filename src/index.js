@@ -185,7 +185,7 @@ app.post("/c2b/validation", (req, res) => {
  * Safaricom calls this after a C2B payment is completed.
  *
  * Payload fields we use:
- *   - BillRefNumber: client's Consolstech username (childID)
+ *   - BillRefNumber: client's Olickhom username (childID)
  *   - TransAmount:   amount paid in KES
  *   - TransID:       MPesa transaction ID (for logging)
  *   - MSISDN:        payer's phone number (for logging)
