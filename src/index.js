@@ -9,12 +9,19 @@ app.use(express.json({ limit: "1mb" }));
 // ---------------------------------------------------------------------------
 // Request logger
 // ---------------------------------------------------------------------------
+const getLocalTimestamp = () => {
+  return new Date().toLocaleString("en-GB", {
+    timeZone: "Africa/Nairobi",
+    hour12: false,
+  });
+};
+
 app.use((req, res, next) => {
   const start = Date.now();
   res.on("finish", () => {
     const durationMs = Date.now() - start;
     console.log(
-      `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`
+      `[${getLocalTimestamp()}] ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`
     );
   });
   next();
@@ -89,7 +96,11 @@ async function creditClient(childID, amount) {
 
   const url = `${ADVANTA_BASE_URL.replace(/\/$/, "")}/api/services/credit`;
 
-  console.log("Crediting client:", { childID, amount, url });
+  console.log(`[${getLocalTimestamp()}] Crediting client:`, {
+    childID,
+    amount,
+    url,
+  });
 
   const response = await axios.post(url, payload, {
     headers: { "Content-Type": "application/json" },
@@ -137,7 +148,7 @@ app.post("/c2b/register", async (req, res) => {
       ValidationURL: `${finalCallbackUrl}/c2b/validation`,
     };
 
-    console.log("Registering C2B URLs:", payload);
+    console.log(`[${getLocalTimestamp()}] Registering C2B URLs:`, payload);
 
     const response = await axios.post(
       `${MPESA_BASE_URL}/mpesa/c2b/v2/registerurl`,
@@ -150,12 +161,18 @@ app.post("/c2b/register", async (req, res) => {
       }
     );
 
-    console.log("C2B URL registration response:", response.data);
+    console.log(
+      `[${getLocalTimestamp()}] C2B URL registration response:`,
+      response.data
+    );
     return res.json(response.data);
   } catch (error) {
     const status = error.response?.status || 500;
     const data = error.response?.data || { error: error.message };
-    console.error("C2B URL registration failed:", JSON.stringify(data));
+    console.error(
+      `[${getLocalTimestamp()}] C2B URL registration failed:`,
+      JSON.stringify(data)
+    );
     return res.status(status).json(data);
   }
 });
@@ -171,7 +188,10 @@ app.post("/c2b/register", async (req, res) => {
  * We accept all payments by returning ResultCode 0.
  */
 app.post("/c2b/validation", (req, res) => {
-  console.log("C2B Validation request:", JSON.stringify(req.body));
+  console.log(
+    `[${getLocalTimestamp()}] C2B Validation request:`,
+    JSON.stringify(req.body)
+  );
   res.json({ ResultCode: 0, ResultDesc: "Accepted" });
 });
 
@@ -193,7 +213,10 @@ app.post("/c2b/validation", (req, res) => {
 app.post("/c2b/confirmation", async (req, res) => {
   const payload = req.body || {};
 
-  console.log("C2B Confirmation received:", JSON.stringify(payload));
+  console.log(
+    `[${getLocalTimestamp()}] C2B Confirmation received:`,
+    JSON.stringify(payload)
+  );
 
   const {
     BillRefNumber,
@@ -214,22 +237,22 @@ app.post("/c2b/confirmation", async (req, res) => {
 
   try {
     console.log(
-      `Auto-crediting: childID=${BillRefNumber}, amount=${TransAmount} KES, ` +
-      `TransID=${TransID}, MSISDN=${MSISDN}, Name=${FirstName}`
+      `[${getLocalTimestamp()}] Auto-crediting: childID=${BillRefNumber}, ` +
+      `amount=${TransAmount} KES, TransID=${TransID}, MSISDN=${MSISDN}, Name=${FirstName}`
     );
 
     const creditResult = await creditClient(BillRefNumber, TransAmount);
 
     console.log(
-      `Auto-credit SUCCESS: TransID=${TransID}, childID=${BillRefNumber}, ` +
-      `amount=${TransAmount} KES, result=`,
+      `[${getLocalTimestamp()}] Auto-credit SUCCESS: TransID=${TransID}, ` +
+      `childID=${BillRefNumber}, amount=${TransAmount} KES, result=`,
       creditResult
     );
   } catch (error) {
     const errorData = error.response?.data || { error: error.message };
     console.error(
-      `Auto-credit FAILED: TransID=${TransID}, childID=${BillRefNumber}, ` +
-      `amount=${TransAmount} KES, error=`,
+      `[${getLocalTimestamp()}] Auto-credit FAILED: TransID=${TransID}, ` +
+      `childID=${BillRefNumber}, amount=${TransAmount} KES, error=`,
       JSON.stringify(errorData)
     );
   }
@@ -267,7 +290,7 @@ app.post("/reseller/credit", async (req, res) => {
     }
 
     const result = await creditClient(childID, amount);
-    console.log("Credit response:", result);
+    console.log(`[${getLocalTimestamp()}] Credit response:`, result);
     return res.json(result);
   } catch (error) {
     const status = error.response?.status || 500;
@@ -275,7 +298,7 @@ app.post("/reseller/credit", async (req, res) => {
       "response-code": status,
       "response-description": error.message,
     };
-    console.error("Credit failed:", JSON.stringify(data));
+    console.error(`[${getLocalTimestamp()}] Credit failed:`, JSON.stringify(data));
     return res.status(status).json(data);
   }
 });
@@ -284,5 +307,7 @@ app.post("/reseller/credit", async (req, res) => {
 // Start server
 // ---------------------------------------------------------------------------
 app.listen(PORT, () => {
-  console.log(`Reseller Credit API running on port ${PORT}`);
+  console.log(
+    `[${getLocalTimestamp()}] Reseller Credit API running on port ${PORT}`
+  );
 });
