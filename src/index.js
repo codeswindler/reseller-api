@@ -112,12 +112,12 @@ app.get("/health", (_req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * POST /c2b/register
+ * POST /mpesa/register
  *
  * Registers the Validation and Confirmation URLs with Safaricom.
  * Call this once to set up callbacks for your paybill.
  */
-app.post("/c2b/register", async (req, res) => {
+app.post("/mpesa/register", async (req, res) => {
   try {
     if (!MPESA_SHORTCODE || !MPESA_CALLBACK_BASE_URL) {
       return res.status(500).json({
@@ -126,13 +126,15 @@ app.post("/c2b/register", async (req, res) => {
     }
 
     const accessToken = await getAccessToken();
-    const baseUrl = MPESA_CALLBACK_BASE_URL.replace(/\/$/, "");
+    const finalCallbackUrl = MPESA_CALLBACK_BASE_URL.startsWith("http")
+      ? MPESA_CALLBACK_BASE_URL.replace(/\/$/, "")
+      : `https://${MPESA_CALLBACK_BASE_URL.replace(/\/$/, "")}`;
 
     const payload = {
       ShortCode: MPESA_SHORTCODE,
       ResponseType: "Completed",
-      ConfirmationURL: `${baseUrl}/c2b/confirmation`,
-      ValidationURL: `${baseUrl}/c2b/validation`,
+      ConfirmationURL: `${finalCallbackUrl}/mpesa/confirmation`,
+      ValidationURL: `${finalCallbackUrl}/mpesa/validation`,
     };
 
     console.log("Registering C2B URLs:", payload);
@@ -163,12 +165,12 @@ app.post("/c2b/register", async (req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * POST /c2b/validation
+ * POST /mpesa/validation
  *
  * Safaricom calls this before processing a C2B payment.
  * We accept all payments by returning ResultCode 0.
  */
-app.post("/c2b/validation", (req, res) => {
+app.post("/mpesa/validation", (req, res) => {
   console.log("C2B Validation request:", JSON.stringify(req.body));
   res.json({ ResultCode: 0, ResultDesc: "Accepted" });
 });
@@ -178,7 +180,7 @@ app.post("/c2b/validation", (req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * POST /c2b/confirmation
+ * POST /mpesa/confirmation
  *
  * Safaricom calls this after a C2B payment is completed.
  *
@@ -188,7 +190,7 @@ app.post("/c2b/validation", (req, res) => {
  *   - TransID:       MPesa transaction ID (for logging)
  *   - MSISDN:        payer's phone number (for logging)
  */
-app.post("/c2b/confirmation", async (req, res) => {
+app.post("/mpesa/confirmation", async (req, res) => {
   const payload = req.body || {};
 
   console.log("C2B Confirmation received:", JSON.stringify(payload));
