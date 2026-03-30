@@ -27,7 +27,7 @@ npm start
 3. Register your C2B URLs with Safaricom (run once):
 
 ```bash
-curl -X POST http://localhost:3000/mpesa/register
+curl -X POST http://localhost:3000/c2b/register
 ```
 
 ## Environment Variables
@@ -50,16 +50,16 @@ curl -X POST http://localhost:3000/mpesa/register
 
 Returns `{ "ok": true }`.
 
-### `POST /mpesa/register`
+### `POST /c2b/register`
 
 Registers validation and confirmation URLs with Safaricom. Run once after
 deployment.
 
-### `POST /mpesa/validation`
+### `POST /c2b/validation`
 
 Called by Safaricom before processing a payment. Accepts all payments.
 
-### `POST /mpesa/confirmation`
+### `POST /c2b/confirmation`
 
 Called by Safaricom after a payment is completed. Extracts:
 - `BillRefNumber` → client's username (`childID`)
