@@ -32,6 +32,7 @@ app.use((req, res, next) => {
 // ---------------------------------------------------------------------------
 const {
   ADVANTA_BASE_URL,
+  ADVANTA_SMS_BASE_URL,
   ADVANTA_API_KEY,
   ADVANTA_PARTNER_ID,
   ADVANTA_SHORTCODE,
@@ -149,7 +150,9 @@ async function sendSMS(mobile, message) {
     hashed: isHashed,
   };
 
-  const url = `${ADVANTA_BASE_URL.replace(/\/$/, "")}/api/services/sendotp`;
+  // Use dedicated SMS base URL if set, otherwise fall back to the main one
+  const smsBaseUrl = (ADVANTA_SMS_BASE_URL || ADVANTA_BASE_URL).replace(/\/$/, "");
+  const url = `${smsBaseUrl}/api/services/sendotp`;
 
   try {
     console.log(`[${getLocalTimestamp()}] Sending SMS alert:`, {
