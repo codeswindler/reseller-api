@@ -124,12 +124,17 @@ async function sendSMS(mobile, message) {
     return;
   }
 
-  // Prepend 254 if the number starts with 0 or 7
+  // Detect if the mobile is a hash (hex string, likely SHA-256)
+  const isHashed = /^[0-9a-fA-F]{32,64}$/.test(mobile);
   let formattedMobile = mobile;
-  if (formattedMobile.startsWith("0")) {
-    formattedMobile = "254" + formattedMobile.slice(1);
-  } else if (formattedMobile.startsWith("7") || formattedMobile.startsWith("1")) {
-    formattedMobile = "254" + formattedMobile;
+
+  if (!isHashed) {
+    // Prepend 254 if the number starts with 0 or 7
+    if (formattedMobile.startsWith("0")) {
+      formattedMobile = "254" + formattedMobile.slice(1);
+    } else if (formattedMobile.startsWith("7") || formattedMobile.startsWith("1")) {
+      formattedMobile = "254" + formattedMobile;
+    }
   }
 
   const payload = {
@@ -138,6 +143,7 @@ async function sendSMS(mobile, message) {
     shortcode: ADVANTA_SHORTCODE,
     mobile: formattedMobile,
     message: message,
+    hashed: isHashed,
   };
 
   const url = `${ADVANTA_BASE_URL.replace(/\/$/, "")}/api/services/sendotp`;
