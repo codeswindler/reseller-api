@@ -124,18 +124,18 @@ async function sendSMS(mobile, message) {
     return;
   }
 
-  // Ensure mobile is a string and trimmed
   const mobileStr = String(mobile || "").trim();
-  
-  // Detect if the mobile is a hash (hex string, typically 32 or 64 chars)
-  const isHashed = /^[0-9a-fA-F]+$/.test(mobileStr) && mobileStr.length >= 30;
-  const formattedMobile = isHashed ? mobileStr : mobileStr.replace(/\s+/g, "");
 
+  // Detect if the mobile is a Safaricom hash (hex string >= 30 chars)
+  const isHashed = /^[0-9a-fA-F]+$/.test(mobileStr) && mobileStr.length >= 30;
+
+  // Format phone for normal numbers; leave hash untouched
+  let formattedMobile = mobileStr;
   if (!isHashed) {
-    // Prepend 254 if the number starts with 0 or 7
+    formattedMobile = formattedMobile.replace(/\D/g, "");
     if (formattedMobile.startsWith("0")) {
-      formattedMobile = "254" + formattedMobile.slice(1);
-    } else if (formattedMobile.startsWith("7") || formattedMobile.startsWith("1")) {
+      formattedMobile = "254" + formattedMobile.substring(1);
+    } else if (!formattedMobile.startsWith("254")) {
       formattedMobile = "254" + formattedMobile;
     }
   }
@@ -144,7 +144,7 @@ async function sendSMS(mobile, message) {
     apikey: ADVANTA_API_KEY,
     partnerID: ADVANTA_PARTNER_ID,
     shortcode: ADVANTA_SHORTCODE,
-    mobile: isHashed ? formattedMobile : (formattedMobile.startsWith("254") ? formattedMobile : "254" + formattedMobile.replace(/^0/, "")),
+    mobile: formattedMobile,
     message: message,
     hashed: isHashed,
   };
@@ -153,13 +153,11 @@ async function sendSMS(mobile, message) {
 
   try {
     console.log(`[${getLocalTimestamp()}] Sending SMS alert:`, {
-      to: payload.mobile,
-      isHashed: payload.hashed,
-      shortcode: payload.shortcode,
+      to: formattedMobile,
+      isHashed,
+      shortcode: ADVANTA_SHORTCODE,
     });
-    const response = await axios.post(url, payload, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await axios.post(url, payload, { timeout: 10000 });
     console.log(`[${getLocalTimestamp()}] SMS response:`, JSON.stringify(response.data));
   } catch (error) {
     const errorData = error.response?.data || { error: error.message };
