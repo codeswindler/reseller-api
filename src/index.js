@@ -39,6 +39,7 @@ const {
   MPESA_CONSUMER_SECRET,
   MPESA_SHORTCODE,
   MPESA_CALLBACK_BASE_URL,
+  RESELLER_NAME = "Reseller",
   PORT = 3000,
 } = process.env;
 
@@ -205,7 +206,7 @@ app.post("/c2b/validation", (req, res) => {
  * Safaricom calls this after a C2B payment is completed.
  *
  * Payload fields we use:
- *   - BillRefNumber: client's Olickhom username (childID)
+ *   - BillRefNumber: client's username (childID)
  *   - TransAmount:   amount paid in KES
  *   - TransID:       MPesa transaction ID (for logging)
  *   - MSISDN:        payer's phone number (for logging)
@@ -308,6 +309,6 @@ app.post("/reseller/credit", async (req, res) => {
 // ---------------------------------------------------------------------------
 app.listen(PORT, () => {
   console.log(
-    `[${getLocalTimestamp()}] Reseller Credit API running on port ${PORT}`
+    `[${getLocalTimestamp()}] ${RESELLER_NAME} Credit API running on port ${PORT}`
   );
 });
