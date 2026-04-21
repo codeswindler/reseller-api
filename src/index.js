@@ -124,9 +124,12 @@ async function sendSMS(mobile, message) {
     return;
   }
 
-  // Detect if the mobile is a hash (hex string, likely SHA-256)
-  const isHashed = /^[0-9a-fA-F]{32,64}$/.test(mobile);
-  let formattedMobile = mobile;
+  // Ensure mobile is a string and trimmed
+  const mobileStr = String(mobile || "").trim();
+  
+  // Detect if the mobile is a hash (hex string, typically 32 or 64 chars)
+  const isHashed = /^[0-9a-fA-F]+$/.test(mobileStr) && mobileStr.length >= 30;
+  const formattedMobile = isHashed ? mobileStr : mobileStr.replace(/\s+/g, "");
 
   if (!isHashed) {
     // Prepend 254 if the number starts with 0 or 7
@@ -141,7 +144,7 @@ async function sendSMS(mobile, message) {
     apikey: ADVANTA_API_KEY,
     partnerID: ADVANTA_PARTNER_ID,
     shortcode: ADVANTA_SHORTCODE,
-    mobile: formattedMobile,
+    mobile: isHashed ? formattedMobile : (formattedMobile.startsWith("254") ? formattedMobile : "254" + formattedMobile.replace(/^0/, "")),
     message: message,
     hashed: isHashed,
   };
@@ -149,7 +152,11 @@ async function sendSMS(mobile, message) {
   const url = `${ADVANTA_BASE_URL.replace(/\/$/, "")}/api/services/sendotp`;
 
   try {
-    console.log(`[${getLocalTimestamp()}] Sending SMS alert to ${formattedMobile}...`);
+    console.log(`[${getLocalTimestamp()}] Sending SMS alert:`, {
+      to: payload.mobile,
+      isHashed: payload.hashed,
+      shortcode: payload.shortcode,
+    });
     const response = await axios.post(url, payload, {
       headers: { "Content-Type": "application/json" },
     });
