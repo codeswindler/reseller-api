@@ -34,6 +34,7 @@ const {
   ADVANTA_BASE_URL,
   ADVANTA_API_KEY,
   ADVANTA_PARTNER_ID,
+  ADVANTA_SHORTCODE,
   MPESA_ENV = "production",
   MPESA_CONSUMER_KEY,
   MPESA_CONSUMER_SECRET,
@@ -108,6 +109,49 @@ async function creditClient(childID, amount) {
   });
 
   return response.data;
+}
+
+/**
+ * Send an SMS to a customer via the Advanta Africa sendotp API.
+ * This is used for successful payment alerts.
+ *
+ * @param {string} mobile  – Recipient's phone number
+ * @param {string} message – The message content
+ */
+async function sendSMS(mobile, message) {
+  if (!ADVANTA_BASE_URL || !ADVANTA_API_KEY || !ADVANTA_PARTNER_ID || !ADVANTA_SHORTCODE) {
+    console.error(`[${getLocalTimestamp()}] Skipped sending SMS: Missing Advanta credentials or Shortcode in .env`);
+    return;
+  }
+
+  // Prepend 254 if the number starts with 0 or 7
+  let formattedMobile = mobile;
+  if (formattedMobile.startsWith("0")) {
+    formattedMobile = "254" + formattedMobile.slice(1);
+  } else if (formattedMobile.startsWith("7") || formattedMobile.startsWith("1")) {
+    formattedMobile = "254" + formattedMobile;
+  }
+
+  const payload = {
+    apikey: ADVANTA_API_KEY,
+    partnerID: ADVANTA_PARTNER_ID,
+    shortcode: ADVANTA_SHORTCODE,
+    mobile: formattedMobile,
+    message: message,
+  };
+
+  const url = `${ADVANTA_BASE_URL.replace(/\/$/, "")}/api/services/sendotp`;
+
+  try {
+    console.log(`[${getLocalTimestamp()}] Sending SMS alert to ${formattedMobile}...`);
+    const response = await axios.post(url, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    console.log(`[${getLocalTimestamp()}] SMS response:`, JSON.stringify(response.data));
+  } catch (error) {
+    const errorData = error.response?.data || { error: error.message };
+    console.error(`[${getLocalTimestamp()}] SMS FAILED:`, JSON.stringify(errorData));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -249,6 +293,13 @@ app.post("/c2b/confirmation", async (req, res) => {
       `childID=${BillRefNumber}, amount=${TransAmount} KES, result=`,
       creditResult
     );
+
+    // Send auto-response SMS
+    const units = creditResult["sms-units"] || "0";
+    const balance = creditResult["new-balance"] || "0";
+    const smsMessage = `Payment of KES ${TransAmount} received. ${units} SMS units credited to account ${BillRefNumber}. New balance: ${balance} units. Thank you!`;
+    
+    await sendSMS(MSISDN, smsMessage);
   } catch (error) {
     const errorData = error.response?.data || { error: error.message };
     console.error(
