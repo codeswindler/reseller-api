@@ -39,7 +39,7 @@ const {
   MPESA_CONSUMER_SECRET,
   MPESA_SHORTCODE,
   MPESA_CALLBACK_BASE_URL,
-  RESELLER_NAME = "Reseller",
+  RESELLER_NAME = "Olickhom",
   PORT = 3000,
 } = process.env;
 
