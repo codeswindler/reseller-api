@@ -311,7 +311,8 @@ app.post("/c2b/confirmation", async (req, res) => {
     // Send auto-response SMS
     const units = creditResult["sms-units"] || "0";
     const balance = creditResult["new-balance"] || "0";
-    const smsMessage = `Payment of KES ${TransAmount} received. ${units} SMS units credited to account ${BillRefNumber}. New balance: ${balance} units. Thank you!`;
+    const smsMessage = `Dear ${FirstName}, payment of KES ${TransAmount} received.\n${units} SMS units credited to account ${BillRefNumber}. New balance: ${balance} units.\nThank you!`;
+
     
     await sendSMS(MSISDN, smsMessage);
   } catch (error) {
